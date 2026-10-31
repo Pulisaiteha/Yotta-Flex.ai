@@ -1,0 +1,16 @@
+{
+  "_note": "Expected results for data/input/*. Kept separate from the input files on purpose.",
+  "order_rows_read": 11,
+  "accepted_orders": 4,
+  "rejected_orders": 7,
+  "accepted_amount_inr": 2349.51,
+  "expected_rejections": {
+    "3": "unknown_customer_id",
+    "5": "duplicate_order_id_in_batch",
+    "6": "missing_amount",
+    "7": "invalid_order_date",
+    "8": "amount_must_be_positive",
+    "9": "amount_more_than_2_decimals",
+    "10": "missing_order_fields:amount"
+  }
+}

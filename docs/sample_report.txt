@@ -1,0 +1,46 @@
+
+=== Revenue summary ===
+{'total_revenue_inr': 2349.51, 'order_count': 4, 'paying_customers': 3, 'avg_order_value_inr': 587.38}
+
+=== Revenue by customer ===
+{'customer_id': 'C101', 'name': 'Ravi', 'city': 'Hyderabad', 'revenue_inr': 1200.0, 'order_count': 1}
+{'customer_id': 'C102', 'name': 'Priya', 'city': 'Bengaluru', 'revenue_inr': 800.0, 'order_count': 1}
+{'customer_id': 'C103', 'name': 'Arun', 'city': 'Chennai', 'revenue_inr': 349.51, 'order_count': 2}
+
+=== Revenue by city ===
+{'city': 'Hyderabad', 'revenue_inr': 1200.0, 'order_count': 1}
+{'city': 'Bengaluru', 'revenue_inr': 800.0, 'order_count': 1}
+{'city': 'Chennai', 'revenue_inr': 349.51, 'order_count': 2}
+
+=== Recent pipeline runs ===
+{'run_id': 'run_72eb1d308189', 'status': 'COMPLETED_WITH_REJECTS', 'order_rows_read': 11, 'accepted_orders': 4, 'rejected_orders': 7, 'skipped_orders': 0, 'duration_seconds': 0.07881839998299256}
+
+=== Rejection reasons ===
+{'entity': 'order', 'reason': 'amount_more_than_2_decimals', 'records': 1}
+{'entity': 'order', 'reason': 'amount_must_be_positive', 'records': 1}
+{'entity': 'order', 'reason': 'duplicate_order_id_in_batch', 'records': 1}
+{'entity': 'order', 'reason': 'invalid_order_date', 'records': 1}
+{'entity': 'order', 'reason': 'missing_amount', 'records': 1}
+{'entity': 'order', 'reason': 'missing_order_fields:amount', 'records': 1}
+{'entity': 'order', 'reason': 'unknown_customer_id', 'records': 1}
+
+=== Reconciliation for latest run run_72eb1d308189 ===
+{
+  "run_id": "run_72eb1d308189",
+  "status": "COMPLETED_WITH_REJECTS",
+  "order_rows_read": 11,
+  "accepted_orders": 4,
+  "rejected_orders": 7,
+  "skipped_orders": 0,
+  "fact_rows_loaded_by_run": 4,
+  "reject_rows_recorded": 7,
+  "accepted_amount_inr": 2349.51,
+  "fact_amount_loaded_inr": 2349.51,
+  "checks": {
+    "input_equals_accepted_plus_rejected_plus_skipped": true,
+    "accepted_count_matches_fact_table": true,
+    "rejected_count_matches_reject_table": true,
+    "accepted_amount_matches_fact_table": true
+  },
+  "passed": true
+}

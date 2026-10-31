@@ -1,0 +1,1874 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "YottaFlex Data Pipeline API",
+    "description": "Ingest customers (CSV) and orders (JSON), validate, load a SQLite star schema, and expose monitoring and analytics. Demo page: [/](/) \u00b7 Guide: INTERVIEWER_GUIDE.md",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/demo/reset": {
+      "post": {
+        "tags": [
+          "Source data"
+        ],
+        "summary": "Step 0: empty the input files AND the warehouse",
+        "description": "Demo only. Calls `source_files.clear()` and `database.clear_all_tables()`.",
+        "operationId": "reset_demo_demo_reset_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/source/load-sample": {
+      "post": {
+        "tags": [
+          "Source data"
+        ],
+        "summary": "Step 0: copy the bundled sample (3 customers, 11 orders) into the input files",
+        "description": "Calls `source_files.load_sample()`: copies data/input/* to data/workspace/.",
+        "operationId": "load_sample_source_load_sample_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/source/customers": {
+      "get": {
+        "tags": [
+          "Source data"
+        ],
+        "summary": "Step 1: show the rows currently in customers.csv",
+        "description": "Calls `source_files.read_customers_file()`.",
+        "operationId": "get_source_customers_source_customers_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceFile"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Source data"
+        ],
+        "summary": "Step 1: add/replace one customer row in customers.csv",
+        "description": "Calls `source_files.save_customer()`. No validation here on purpose - the pipeline validates.",
+        "operationId": "add_source_customer_source_customers_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SourceCustomer"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaveResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/source/orders": {
+      "get": {
+        "tags": [
+          "Source data"
+        ],
+        "summary": "Step 2: show the objects currently in orders.json",
+        "description": "Calls `source_files.read_orders_file()`.",
+        "operationId": "get_source_orders_source_orders_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceFile"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Source data"
+        ],
+        "summary": "Step 2: append one order to orders.json",
+        "description": "Calls `source_files.save_order()`. Blank fields are stored as null so the pipeline can reject them.",
+        "operationId": "add_source_order_source_orders_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SourceOrder"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaveResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pipeline/runs": {
+      "post": {
+        "tags": [
+          "Pipeline"
+        ],
+        "summary": "Step 3: run the pipeline on files already on the server",
+        "description": "Calls `execute_run()` -> `runner.run_pipeline()`:\nread files -> validate -> transform -> load in ONE transaction -> record run metrics.",
+        "operationId": "create_run_pipeline_runs_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/RunRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunSummary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Pipeline"
+        ],
+        "summary": "Step 4: list recent runs (newest first)",
+        "description": "Calls `queries.list_runs()` -> SELECT FROM pipeline_runs.",
+        "operationId": "list_runs_pipeline_runs_get",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "examples": [
+                "SUCCESS"
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Run"
+                  },
+                  "title": "Response List Runs Pipeline Runs Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pipeline/runs/upload": {
+      "post": {
+        "tags": [
+          "Pipeline"
+        ],
+        "summary": "Step 3 (alternative): upload customers CSV + orders JSON and run",
+        "description": "Calls `save_upload()` twice, then the same `runner.run_pipeline()`.",
+        "operationId": "upload_run_pipeline_runs_upload_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_run_pipeline_runs_upload_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunSummary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pipeline/runs/{run_id}": {
+      "get": {
+        "tags": [
+          "Pipeline"
+        ],
+        "summary": "Step 4: one run's status, counts and failure message",
+        "description": "Calls `queries.get_run()`.",
+        "operationId": "get_run_pipeline_runs__run_id__get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Run"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pipeline/runs/{run_id}/rejections": {
+      "get": {
+        "tags": [
+          "Pipeline"
+        ],
+        "summary": "Step 4: quarantined records of a run, traceable to source row",
+        "description": "Calls `queries.get_run()` (404 check) then `queries.list_rejections()`.",
+        "operationId": "get_rejections_pipeline_runs__run_id__rejections_get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "entity",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "customer",
+                    "order"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Entity"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Rejection"
+                  },
+                  "title": "Response Get Rejections Pipeline Runs  Run Id  Rejections Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pipeline/runs/{run_id}/reconciliation": {
+      "get": {
+        "tags": [
+          "Pipeline"
+        ],
+        "summary": "Step 4: source-to-target count and amount reconciliation",
+        "description": "Calls `queries.reconcile_run()`: compares run metrics with real table contents.",
+        "operationId": "get_reconciliation_pipeline_runs__run_id__reconciliation_get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Reconciliation"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analytics/revenue/summary": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Revenue Summary",
+        "description": "Calls `queries.revenue_summary()` -> SUM/COUNT over fact_order.",
+        "operationId": "revenue_summary_analytics_revenue_summary_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevenueSummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analytics/revenue/by-customer": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Revenue By Customer",
+        "description": "Calls `queries.revenue_by_customer()` -> fact_order JOIN dim_customer.",
+        "operationId": "revenue_by_customer_analytics_revenue_by_customer_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CustomerRevenue"
+                  },
+                  "title": "Response Revenue By Customer Analytics Revenue By Customer Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analytics/revenue/by-city": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Revenue By City",
+        "description": "Calls `queries.revenue_by_city()` -> fact_order JOIN dim_customer GROUP BY city.",
+        "operationId": "revenue_by_city_analytics_revenue_by_city_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CityRevenue"
+                  },
+                  "type": "array",
+                  "title": "Response Revenue By City Analytics Revenue By City Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analytics/revenue/by-day": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Revenue By Day",
+        "description": "Calls `queries.revenue_by_day()` -> fact_order JOIN dim_date.",
+        "operationId": "revenue_by_day_analytics_revenue_by_day_get",
+        "parameters": [
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Start Date"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "End Date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DailyRevenue"
+                  },
+                  "title": "Response Revenue By Day Analytics Revenue By Day Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analytics/rejections/reasons": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Data-quality issues grouped by reason",
+        "description": "Calls `queries.rejection_reasons()` -> GROUP BY reason over rejected_records.",
+        "operationId": "rejection_reasons_analytics_rejections_reasons_get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RejectionReason"
+                  },
+                  "title": "Response Rejection Reasons Analytics Rejections Reasons Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/customers": {
+      "get": {
+        "tags": [
+          "Warehouse"
+        ],
+        "summary": "List Customers",
+        "description": "Calls `queries.list_customers()` -> dim_customer.",
+        "operationId": "list_customers_customers_get",
+        "parameters": [
+          {
+            "name": "city",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "City"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Customer"
+                  },
+                  "title": "Response List Customers Customers Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/customers/{customer_id}": {
+      "get": {
+        "tags": [
+          "Warehouse"
+        ],
+        "summary": "Customer with order totals and attribute change history",
+        "description": "Calls `queries.get_customer()` -> dim_customer + fact_order totals + customer_change_log.",
+        "operationId": "get_customer_customers__customer_id__get",
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Customer Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orders": {
+      "get": {
+        "tags": [
+          "Warehouse"
+        ],
+        "summary": "List Orders",
+        "description": "Calls `queries.list_orders()` -> fact_order JOIN dim_customer JOIN dim_date.",
+        "operationId": "list_orders_orders_get",
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Customer Id"
+            }
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Start Date"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "End Date"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Order"
+                  },
+                  "title": "Response List Orders Orders Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Health",
+        "description": "Runs SELECT 1 to prove the database is reachable.",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Body_upload_run_pipeline_runs_upload_post": {
+        "properties": {
+          "customers_file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "Customers File",
+            "description": "customers.csv"
+          },
+          "orders_file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "Orders File",
+            "description": "orders.json"
+          }
+        },
+        "type": "object",
+        "required": [
+          "customers_file",
+          "orders_file"
+        ],
+        "title": "Body_upload_run_pipeline_runs_upload_post"
+      },
+      "CityRevenue": {
+        "properties": {
+          "city": {
+            "type": "string",
+            "title": "City"
+          },
+          "revenue_inr": {
+            "type": "number",
+            "title": "Revenue Inr"
+          },
+          "order_count": {
+            "type": "integer",
+            "title": "Order Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "city",
+          "revenue_inr",
+          "order_count"
+        ],
+        "title": "CityRevenue"
+      },
+      "Customer": {
+        "properties": {
+          "customer_id": {
+            "type": "string",
+            "title": "Customer Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "city": {
+            "type": "string",
+            "title": "City"
+          }
+        },
+        "type": "object",
+        "required": [
+          "customer_id",
+          "name",
+          "city"
+        ],
+        "title": "Customer"
+      },
+      "CustomerChange": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "old_name": {
+            "type": "string",
+            "title": "Old Name"
+          },
+          "old_city": {
+            "type": "string",
+            "title": "Old City"
+          },
+          "new_name": {
+            "type": "string",
+            "title": "New Name"
+          },
+          "new_city": {
+            "type": "string",
+            "title": "New City"
+          },
+          "changed_at": {
+            "type": "string",
+            "title": "Changed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id",
+          "old_name",
+          "old_city",
+          "new_name",
+          "new_city",
+          "changed_at"
+        ],
+        "title": "CustomerChange"
+      },
+      "CustomerDetail": {
+        "properties": {
+          "customer_id": {
+            "type": "string",
+            "title": "Customer Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "city": {
+            "type": "string",
+            "title": "City"
+          },
+          "order_count": {
+            "type": "integer",
+            "title": "Order Count"
+          },
+          "revenue_inr": {
+            "type": "number",
+            "title": "Revenue Inr"
+          },
+          "change_history": {
+            "items": {
+              "$ref": "#/components/schemas/CustomerChange"
+            },
+            "type": "array",
+            "title": "Change History"
+          }
+        },
+        "type": "object",
+        "required": [
+          "customer_id",
+          "name",
+          "city",
+          "order_count",
+          "revenue_inr",
+          "change_history"
+        ],
+        "title": "CustomerDetail"
+      },
+      "CustomerRevenue": {
+        "properties": {
+          "customer_id": {
+            "type": "string",
+            "title": "Customer Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "city": {
+            "type": "string",
+            "title": "City"
+          },
+          "revenue_inr": {
+            "type": "number",
+            "title": "Revenue Inr"
+          },
+          "order_count": {
+            "type": "integer",
+            "title": "Order Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "customer_id",
+          "name",
+          "city",
+          "revenue_inr",
+          "order_count"
+        ],
+        "title": "CustomerRevenue"
+      },
+      "DailyRevenue": {
+        "properties": {
+          "full_date": {
+            "type": "string",
+            "title": "Full Date"
+          },
+          "revenue_inr": {
+            "type": "number",
+            "title": "Revenue Inr"
+          },
+          "order_count": {
+            "type": "integer",
+            "title": "Order Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "full_date",
+          "revenue_inr",
+          "order_count"
+        ],
+        "title": "DailyRevenue"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Health": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "database": {
+            "type": "string",
+            "title": "Database"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "database"
+        ],
+        "title": "Health"
+      },
+      "Order": {
+        "properties": {
+          "order_id": {
+            "type": "string",
+            "title": "Order Id"
+          },
+          "customer_id": {
+            "type": "string",
+            "title": "Customer Id"
+          },
+          "order_date": {
+            "type": "string",
+            "title": "Order Date"
+          },
+          "amount_inr": {
+            "type": "number",
+            "title": "Amount Inr"
+          },
+          "source_run_id": {
+            "type": "string",
+            "title": "Source Run Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "order_id",
+          "customer_id",
+          "order_date",
+          "amount_inr",
+          "source_run_id"
+        ],
+        "title": "Order"
+      },
+      "Reconciliation": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "order_rows_read": {
+            "type": "integer",
+            "title": "Order Rows Read"
+          },
+          "accepted_orders": {
+            "type": "integer",
+            "title": "Accepted Orders"
+          },
+          "rejected_orders": {
+            "type": "integer",
+            "title": "Rejected Orders"
+          },
+          "skipped_orders": {
+            "type": "integer",
+            "title": "Skipped Orders"
+          },
+          "fact_rows_loaded_by_run": {
+            "type": "integer",
+            "title": "Fact Rows Loaded By Run"
+          },
+          "reject_rows_recorded": {
+            "type": "integer",
+            "title": "Reject Rows Recorded"
+          },
+          "accepted_amount_inr": {
+            "type": "number",
+            "title": "Accepted Amount Inr"
+          },
+          "fact_amount_loaded_inr": {
+            "type": "number",
+            "title": "Fact Amount Loaded Inr"
+          },
+          "checks": {
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "type": "object",
+            "title": "Checks"
+          },
+          "passed": {
+            "type": "boolean",
+            "title": "Passed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id",
+          "status",
+          "order_rows_read",
+          "accepted_orders",
+          "rejected_orders",
+          "skipped_orders",
+          "fact_rows_loaded_by_run",
+          "reject_rows_recorded",
+          "accepted_amount_inr",
+          "fact_amount_loaded_inr",
+          "checks",
+          "passed"
+        ],
+        "title": "Reconciliation"
+      },
+      "Rejection": {
+        "properties": {
+          "rejection_key": {
+            "type": "integer",
+            "title": "Rejection Key"
+          },
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "entity": {
+            "type": "string",
+            "title": "Entity"
+          },
+          "source_name": {
+            "type": "string",
+            "title": "Source Name"
+          },
+          "source_row_number": {
+            "type": "integer",
+            "title": "Source Row Number"
+          },
+          "record_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Record Id"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "raw_record": {
+            "type": "string",
+            "title": "Raw Record"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rejection_key",
+          "run_id",
+          "entity",
+          "source_name",
+          "source_row_number",
+          "record_id",
+          "reason",
+          "raw_record"
+        ],
+        "title": "Rejection"
+      },
+      "RejectionReason": {
+        "properties": {
+          "entity": {
+            "type": "string",
+            "title": "Entity"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "records": {
+            "type": "integer",
+            "title": "Records"
+          }
+        },
+        "type": "object",
+        "required": [
+          "entity",
+          "reason",
+          "records"
+        ],
+        "title": "RejectionReason"
+      },
+      "RevenueSummary": {
+        "properties": {
+          "total_revenue_inr": {
+            "type": "number",
+            "title": "Total Revenue Inr"
+          },
+          "order_count": {
+            "type": "integer",
+            "title": "Order Count"
+          },
+          "paying_customers": {
+            "type": "integer",
+            "title": "Paying Customers"
+          },
+          "avg_order_value_inr": {
+            "type": "number",
+            "title": "Avg Order Value Inr"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_revenue_inr",
+          "order_count",
+          "paying_customers",
+          "avg_order_value_inr"
+        ],
+        "title": "RevenueSummary"
+      },
+      "Run": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "started_at": {
+            "type": "string",
+            "title": "Started At"
+          },
+          "finished_at": {
+            "type": "string",
+            "title": "Finished At"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "customers_file": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customers File"
+          },
+          "orders_file": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Orders File"
+          },
+          "customer_rows_read": {
+            "type": "integer",
+            "title": "Customer Rows Read"
+          },
+          "order_rows_read": {
+            "type": "integer",
+            "title": "Order Rows Read"
+          },
+          "accepted_orders": {
+            "type": "integer",
+            "title": "Accepted Orders"
+          },
+          "rejected_orders": {
+            "type": "integer",
+            "title": "Rejected Orders"
+          },
+          "rejected_customers": {
+            "type": "integer",
+            "title": "Rejected Customers"
+          },
+          "skipped_orders": {
+            "type": "integer",
+            "title": "Skipped Orders"
+          },
+          "late_arriving_orders": {
+            "type": "integer",
+            "title": "Late Arriving Orders"
+          },
+          "accepted_amount_paise": {
+            "type": "integer",
+            "title": "Accepted Amount Paise"
+          },
+          "duration_seconds": {
+            "type": "number",
+            "title": "Duration Seconds"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id",
+          "started_at",
+          "finished_at",
+          "status",
+          "customers_file",
+          "orders_file",
+          "customer_rows_read",
+          "order_rows_read",
+          "accepted_orders",
+          "rejected_orders",
+          "rejected_customers",
+          "skipped_orders",
+          "late_arriving_orders",
+          "accepted_amount_paise",
+          "duration_seconds",
+          "message"
+        ],
+        "title": "Run"
+      },
+      "RunRequest": {
+        "properties": {
+          "customers_path": {
+            "type": "string",
+            "title": "Customers Path",
+            "description": "Path to customers CSV on the server",
+            "default": "data/input/customers.csv"
+          },
+          "orders_path": {
+            "type": "string",
+            "title": "Orders Path",
+            "description": "Path to orders JSON on the server",
+            "default": "data/input/orders.json"
+          }
+        },
+        "type": "object",
+        "title": "RunRequest"
+      },
+      "RunSummary": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "customer_rows_read": {
+            "type": "integer",
+            "title": "Customer Rows Read"
+          },
+          "order_rows_read": {
+            "type": "integer",
+            "title": "Order Rows Read"
+          },
+          "accepted_orders": {
+            "type": "integer",
+            "title": "Accepted Orders"
+          },
+          "rejected_orders": {
+            "type": "integer",
+            "title": "Rejected Orders"
+          },
+          "rejected_customers": {
+            "type": "integer",
+            "title": "Rejected Customers"
+          },
+          "skipped_orders_already_loaded": {
+            "type": "integer",
+            "title": "Skipped Orders Already Loaded"
+          },
+          "late_arriving_orders": {
+            "type": "integer",
+            "title": "Late Arriving Orders"
+          },
+          "unexpected_columns": {
+            "$ref": "#/components/schemas/UnexpectedColumns"
+          },
+          "order_reconciliation_passed": {
+            "type": "boolean",
+            "title": "Order Reconciliation Passed"
+          },
+          "accepted_amount_inr": {
+            "type": "number",
+            "title": "Accepted Amount Inr"
+          },
+          "warehouse_total_revenue_inr": {
+            "type": "number",
+            "title": "Warehouse Total Revenue Inr"
+          },
+          "duration_seconds": {
+            "type": "number",
+            "title": "Duration Seconds"
+          },
+          "orders_per_second": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Orders Per Second"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id",
+          "status",
+          "customer_rows_read",
+          "order_rows_read",
+          "accepted_orders",
+          "rejected_orders",
+          "rejected_customers",
+          "skipped_orders_already_loaded",
+          "late_arriving_orders",
+          "unexpected_columns",
+          "order_reconciliation_passed",
+          "accepted_amount_inr",
+          "warehouse_total_revenue_inr",
+          "duration_seconds",
+          "orders_per_second"
+        ],
+        "title": "RunSummary"
+      },
+      "SaveResult": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "title": "File"
+          },
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "total_rows": {
+            "type": "integer",
+            "title": "Total Rows"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file",
+          "action",
+          "total_rows"
+        ],
+        "title": "SaveResult"
+      },
+      "SourceCustomer": {
+        "properties": {
+          "customer_id": {
+            "type": "string",
+            "title": "Customer Id",
+            "default": "",
+            "examples": [
+              "C104"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "default": "",
+            "examples": [
+              "Meena"
+            ]
+          },
+          "city": {
+            "type": "string",
+            "title": "City",
+            "default": "",
+            "examples": [
+              "Pune"
+            ]
+          }
+        },
+        "type": "object",
+        "title": "SourceCustomer"
+      },
+      "SourceFile": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "title": "File"
+          },
+          "rows": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Rows"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file",
+          "rows"
+        ],
+        "title": "SourceFile"
+      },
+      "SourceOrder": {
+        "properties": {
+          "order_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Id",
+            "examples": [
+              "O600"
+            ]
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Id",
+            "examples": [
+              "C104"
+            ]
+          },
+          "order_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Date",
+            "description": "YYYY-MM-DD",
+            "examples": [
+              "2026-10-30"
+            ]
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount",
+            "description": "INR; blank = null",
+            "examples": [
+              "499.99"
+            ]
+          }
+        },
+        "type": "object",
+        "title": "SourceOrder"
+      },
+      "UnexpectedColumns": {
+        "properties": {
+          "customers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Customers"
+          },
+          "orders": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Orders"
+          }
+        },
+        "type": "object",
+        "required": [
+          "customers",
+          "orders"
+        ],
+        "title": "UnexpectedColumns"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Source data",
+      "description": "Steps 0-2: create the input files (customers.csv, orders.json) the way a source system would."
+    },
+    {
+      "name": "Pipeline",
+      "description": "Step 3-4: run the pipeline and monitor runs, rejects and reconciliation."
+    },
+    {
+      "name": "Analytics",
+      "description": "Step 5: revenue and data-quality reports."
+    },
+    {
+      "name": "Warehouse",
+      "description": "Step 6: look up loaded customers and orders."
+    },
+    {
+      "name": "Health",
+      "description": "Service liveness."
+    }
+  ]
+}

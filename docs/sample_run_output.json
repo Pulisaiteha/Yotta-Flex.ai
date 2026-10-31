@@ -1,0 +1,22 @@
+{
+  "run_id": "run_72eb1d308189",
+  "status": "COMPLETED_WITH_REJECTS",
+  "customer_rows_read": 3,
+  "order_rows_read": 11,
+  "accepted_orders": 4,
+  "rejected_orders": 7,
+  "rejected_customers": 0,
+  "rejected_records_including_customer_errors": 7,
+  "skipped_orders_already_loaded": 0,
+  "late_arriving_orders": 0,
+  "unexpected_columns": {
+    "customers": [],
+    "orders": []
+  },
+  "order_reconciliation_passed": true,
+  "accepted_amount_inr": 2349.51,
+  "warehouse_total_revenue_inr": 2349.51,
+  "duration_seconds": 0.0837,
+  "orders_per_second": 131,
+  "database": "data/generated/pipeline.db"
+}

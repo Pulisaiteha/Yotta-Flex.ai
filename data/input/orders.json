@@ -1,0 +1,13 @@
+[
+  {"order_id": "O500", "customer_id": "C101", "order_date": "2026-10-28", "amount": 1200},
+  {"order_id": "O501", "customer_id": "C102", "order_date": "2026-10-28", "amount": 800},
+  {"order_id": "O502", "customer_id": "C999", "order_date": "2026-10-28", "amount": 500},
+  {"order_id": "O503", "customer_id": "C103", "order_date": "2026-10-15", "amount": "349.50"},
+  {"order_id": "O500", "customer_id": "C101", "order_date": "2026-10-28", "amount": 1200},
+  {"order_id": "O504", "customer_id": "C101", "order_date": "2026-10-20", "amount": null},
+  {"order_id": "O505", "customer_id": "C102", "order_date": "2026-02-30", "amount": 300},
+  {"order_id": "O506", "customer_id": "C103", "order_date": "2026-10-21", "amount": -50},
+  {"order_id": "O507", "customer_id": "C101", "order_date": "2026-10-22", "amount": 0.001},
+  {"order_id": "O508", "customer_id": "C102", "order_date": "2026-10-22"},
+  {"order_id": "O509", "customer_id": "C103", "order_date": "2026-10-01", "amount": 0.01}
+]

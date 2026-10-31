@@ -1,0 +1,230 @@
+2026-10-31 15:36:01,549 | INFO  | req=- | src.api.main.lifespan:42 | API started, database=C:\Users\saite\AppData\Local\Temp/demo_api2.db, Swagger at /docs
+2026-10-31 15:36:02,096 | INFO  | req=96961e | src.api.main.log_requests:69 | --> GET /health
+2026-10-31 15:36:02,100 | DEBUG | req=96961e | src.api.main.get_db:82 | get_db(): opening connection for this request
+2026-10-31 15:36:02,102 | DEBUG | req=96961e | src.pipeline.database.connect:93 | opened SQLite connection to C:\Users\saite\AppData\Local\Temp\demo_api2.db
+2026-10-31 15:36:02,163 | DEBUG | req=96961e | src.pipeline.database.initialize:99 | schema ensured (CREATE TABLE IF NOT EXISTS for all tables)
+2026-10-31 15:36:02,165 | INFO  | req=96961e | src.api.main.log_requests:74 | <-- GET /health 200 handled by main.health() in 69.6 ms
+########## STEP 1 health
+2026-10-31 15:36:02,470 | INFO  | req=8c9952 | src.api.main.log_requests:69 | --> GET /health
+2026-10-31 15:36:02,471 | DEBUG | req=8c9952 | src.api.main.get_db:82 | get_db(): opening connection for this request
+2026-10-31 15:36:02,475 | DEBUG | req=8c9952 | src.pipeline.database.connect:93 | opened SQLite connection to C:\Users\saite\AppData\Local\Temp\demo_api2.db
+2026-10-31 15:36:02,478 | DEBUG | req=8c9952 | src.pipeline.database.initialize:99 | schema ensured (CREATE TABLE IF NOT EXISTS for all tables)
+2026-10-31 15:36:02,480 | INFO  | req=8c9952 | src.api.main.log_requests:74 | <-- GET /health 200 handled by main.health() in 9.9 ms
+########## STEP 2 run pipeline
+2026-10-31 15:36:02,844 | INFO  | req=191e7e | src.api.main.log_requests:69 | --> POST /pipeline/runs
+2026-10-31 15:36:02,881 | INFO  | req=191e7e | src.api.main.execute_run:93 | execute_run() -> calling runner.run_pipeline(customers=data/input/customers.csv, orders=data/input/orders.json)
+2026-10-31 15:36:02,881 | INFO  | req=191e7e | src.pipeline.runner.run_pipeline:60 | run run_492a615de200 started customers=data/input/customers.csv orders=data/input/orders.json
+2026-10-31 15:36:02,882 | DEBUG | req=191e7e | src.pipeline.database.connect:93 | opened SQLite connection to C:\Users\saite\AppData\Local\Temp\demo_api2.db
+2026-10-31 15:36:02,884 | DEBUG | req=191e7e | src.pipeline.database.initialize:99 | schema ensured (CREATE TABLE IF NOT EXISTS for all tables)
+2026-10-31 15:36:02,884 | INFO  | req=191e7e | src.pipeline.runner.run_pipeline:64 | step 1/7 database ready: C:\Users\saite\AppData\Local\Temp/demo_api2.db
+2026-10-31 15:36:02,884 | INFO  | req=191e7e | src.pipeline.readers.read_customers:15 | reading customers CSV data\input\customers.csv
+2026-10-31 15:36:02,888 | DEBUG | req=191e7e | src.pipeline.validation.check_customer_header:22 | customer header OK: required columns ['city', 'customer_id', 'name'] present
+2026-10-31 15:36:02,888 | INFO  | req=191e7e | src.pipeline.readers.read_customers:24 | customers CSV header=['customer_id', 'name', 'city'] -> 3 data rows
+2026-10-31 15:36:02,888 | INFO  | req=191e7e | src.pipeline.readers.read_orders:30 | reading orders JSON data\input\orders.json
+2026-10-31 15:36:02,889 | INFO  | req=191e7e | src.pipeline.readers.read_orders:42 | orders JSON parsed -> 11 order objects
+2026-10-31 15:36:02,889 | INFO  | req=191e7e | src.pipeline.runner.run_pipeline:74 | step 2/7 files read: 3 customer rows, 11 order rows
+2026-10-31 15:36:02,889 | INFO  | req=191e7e | src.pipeline.runner.run_pipeline:86 | transaction started
+2026-10-31 15:36:02,890 | INFO  | req=191e7e | src.pipeline.runner.run_pipeline:99 | step 3/7 customers validated (validate_customer + clean_customer): 3 valid, 0 rejected
+2026-10-31 15:36:02,892 | DEBUG | req=191e7e | src.pipeline.database.upsert_customer:135 | customer C101 inserted in dim_customer (customer_key=1)
+2026-10-31 15:36:02,893 | DEBUG | req=191e7e | src.pipeline.database.upsert_customer:135 | customer C102 inserted in dim_customer (customer_key=2)
+2026-10-31 15:36:02,893 | DEBUG | req=191e7e | src.pipeline.database.upsert_customer:135 | customer C103 inserted in dim_customer (customer_key=3)
+2026-10-31 15:36:02,893 | INFO  | req=191e7e | src.pipeline.runner.run_pipeline:105 | step 4/7 upserted 3 customers into dim_customer
+2026-10-31 15:36:02,894 | INFO  | req=191e7e | src.pipeline.runner.run_pipeline:119 | step 5/7 processing 11 orders (newest date_key already loaded=None)
+2026-10-31 15:36:02,894 | DEBUG | req=191e7e | src.pipeline.runner.run_pipeline:171 | order row 1 O500 -> validate_order() OK -> clean_order() amount=1200 -> 120000 paise -> INSERT fact_order (customer_key=1, date_key=20261028)
+2026-10-31 15:36:02,895 | DEBUG | req=191e7e | src.pipeline.runner.run_pipeline:171 | order row 2 O501 -> validate_order() OK -> clean_order() amount=800 -> 80000 paise -> INSERT fact_order (customer_key=2, date_key=20261028)
+2026-10-31 15:36:02,895 | DEBUG | req=191e7e | src.pipeline.runner.run_pipeline:137 | order row 3 O502 -> validate_order() -> REJECTED ['unknown_customer_id']
+2026-10-31 15:36:02,895 | DEBUG | req=191e7e | src.pipeline.runner.run_pipeline:171 | order row 4 O503 -> validate_order() OK -> clean_order() amount=349.50 -> 34950 paise -> INSERT fact_order (customer_key=3, date_key=20261015)
+2026-10-31 15:36:02,895 | DEBUG | req=191e7e | src.pipeline.runner.run_pipeline:127 | order row 5 O500 -> REJECTED duplicate_order_id_in_batch
+2026-10-31 15:36:02,895 | DEBUG | req=191e7e | src.pipeline.runner.run_pipeline:137 | order row 6 O504 -> validate_order() -> REJECTED ['missing_amount']
+2026-10-31 15:36:02,896 | DEBUG | req=191e7e | src.pipeline.runner.run_pipeline:137 | order row 7 O505 -> validate_order() -> REJECTED ['invalid_order_date']
+2026-10-31 15:36:02,896 | DEBUG | req=191e7e | src.pipeline.runner.run_pipeline:137 | order row 8 O506 -> validate_order() -> REJECTED ['amount_must_be_positive']
+2026-10-31 15:36:02,896 | DEBUG | req=191e7e | src.pipeline.runner.run_pipeline:137 | order row 9 O507 -> validate_order() -> REJECTED ['amount_more_than_2_decimals']
+2026-10-31 15:36:02,896 | DEBUG | req=191e7e | src.pipeline.runner.run_pipeline:137 | order row 10 O508 -> validate_order() -> REJECTED ['missing_order_fields:amount']
+2026-10-31 15:36:02,896 | DEBUG | req=191e7e | src.pipeline.runner.run_pipeline:171 | order row 11 O509 -> validate_order() OK -> clean_order() amount=0.01 -> 1 paise -> INSERT fact_order (customer_key=3, date_key=20261001)
+2026-10-31 15:36:02,896 | INFO  | req=191e7e | src.pipeline.runner.run_pipeline:181 | step 6/7 orders done: accepted=4 rejected=7 skipped=0 late=0; 0 customer rejects written to rejected_records
+2026-10-31 15:36:02,896 | INFO  | req=191e7e | src.pipeline.runner.run_pipeline:192 | step 7/7 summarize_counts(): input=11 accounted=11 passed=True -> status=COMPLETED_WITH_REJECTS
+2026-10-31 15:36:02,897 | INFO  | req=191e7e | src.pipeline.runner.run_pipeline:208 | pipeline_runs row written; committing transaction
+2026-10-31 15:36:02,903 | INFO  | req=191e7e | src.pipeline.runner.run_pipeline:224 | run run_492a615de200 finished status=COMPLETED_WITH_REJECTS accepted=4 rejected=7 skipped=0 in 0.022s
+2026-10-31 15:36:02,904 | INFO  | req=191e7e | src.api.main.log_requests:74 | <-- POST /pipeline/runs 201 handled by main.create_run() in 60.5 ms
+########## STEP 3 list runs
+2026-10-31 15:36:03,217 | INFO  | req=61b465 | src.api.main.log_requests:69 | --> GET /pipeline/runs
+2026-10-31 15:36:03,218 | DEBUG | req=61b465 | src.api.main.get_db:82 | get_db(): opening connection for this request
+2026-10-31 15:36:03,222 | DEBUG | req=61b465 | src.pipeline.database.connect:93 | opened SQLite connection to C:\Users\saite\AppData\Local\Temp\demo_api2.db
+2026-10-31 15:36:03,224 | DEBUG | req=61b465 | src.pipeline.database.initialize:99 | schema ensured (CREATE TABLE IF NOT EXISTS for all tables)
+2026-10-31 15:36:03,226 | INFO  | req=61b465 | src.pipeline.queries.list_runs:31 | SELECT params=[20] -> 1 rows
+2026-10-31 15:36:03,227 | INFO  | req=61b465 | src.api.main.log_requests:74 | <-- GET /pipeline/runs 200 handled by main.list_runs() in 10.2 ms
+########## STEP 4 get run
+2026-10-31 15:36:03,545 | INFO  | req=ab532b | src.api.main.log_requests:69 | --> GET /pipeline/runs/run_492a615de200
+2026-10-31 15:36:03,547 | DEBUG | req=ab532b | src.api.main.get_db:82 | get_db(): opening connection for this request
+2026-10-31 15:36:03,548 | DEBUG | req=ab532b | src.pipeline.database.connect:93 | opened SQLite connection to C:\Users\saite\AppData\Local\Temp\demo_api2.db
+2026-10-31 15:36:03,549 | DEBUG | req=ab532b | src.pipeline.database.initialize:99 | schema ensured (CREATE TABLE IF NOT EXISTS for all tables)
+2026-10-31 15:36:03,550 | INFO  | req=ab532b | src.pipeline.queries.get_run:35 | SELECT params=['run_492a615de200'] -> 1 row
+2026-10-31 15:36:03,551 | INFO  | req=ab532b | src.api.main.log_requests:74 | <-- GET /pipeline/runs/run_492a615de200 200 handled by main.get_run() in 6.6 ms
+########## STEP 5 rejections
+2026-10-31 15:36:03,861 | INFO  | req=254d2e | src.api.main.log_requests:69 | --> GET /pipeline/runs/run_492a615de200/rejections
+2026-10-31 15:36:03,863 | DEBUG | req=254d2e | src.api.main.get_db:82 | get_db(): opening connection for this request
+2026-10-31 15:36:03,864 | DEBUG | req=254d2e | src.pipeline.database.connect:93 | opened SQLite connection to C:\Users\saite\AppData\Local\Temp\demo_api2.db
+2026-10-31 15:36:03,866 | DEBUG | req=254d2e | src.pipeline.database.initialize:99 | schema ensured (CREATE TABLE IF NOT EXISTS for all tables)
+2026-10-31 15:36:03,867 | INFO  | req=254d2e | src.pipeline.queries.get_run:35 | SELECT params=['run_492a615de200'] -> 1 row
+2026-10-31 15:36:03,867 | INFO  | req=254d2e | src.pipeline.queries.list_rejections:48 | SELECT params=['run_492a615de200', 100, 0] -> 7 rows
+2026-10-31 15:36:03,868 | INFO  | req=254d2e | src.api.main.log_requests:74 | <-- GET /pipeline/runs/run_492a615de200/rejections 200 handled by main.get_rejections() in 7.6 ms
+########## STEP 6 reconciliation
+2026-10-31 15:36:04,173 | INFO  | req=b8be4e | src.api.main.log_requests:69 | --> GET /pipeline/runs/run_492a615de200/reconciliation
+2026-10-31 15:36:04,175 | DEBUG | req=b8be4e | src.api.main.get_db:82 | get_db(): opening connection for this request
+2026-10-31 15:36:04,176 | DEBUG | req=b8be4e | src.pipeline.database.connect:93 | opened SQLite connection to C:\Users\saite\AppData\Local\Temp\demo_api2.db
+2026-10-31 15:36:04,179 | DEBUG | req=b8be4e | src.pipeline.database.initialize:99 | schema ensured (CREATE TABLE IF NOT EXISTS for all tables)
+2026-10-31 15:36:04,180 | INFO  | req=b8be4e | src.pipeline.queries.get_run:35 | SELECT params=['run_492a615de200'] -> 1 row
+2026-10-31 15:36:04,180 | INFO  | req=b8be4e | src.pipeline.queries.reconcile_run:56 | SELECT params=['run_492a615de200'] -> 1 row
+2026-10-31 15:36:04,181 | INFO  | req=b8be4e | src.pipeline.queries.reconcile_run:58 | SELECT params=['run_492a615de200'] -> 1 row
+2026-10-31 15:36:04,181 | INFO  | req=b8be4e | src.pipeline.queries.reconcile_run:67 | reconciliation checks for run_492a615de200: {'input_equals_accepted_plus_rejected_plus_skipped': True, 'accepted_count_matches_fact_table': True, 'rejected_count_matches_reject_table': True, 'accepted_amount_matches_fact_table': True}
+2026-10-31 15:36:04,182 | INFO  | req=b8be4e | src.api.main.log_requests:74 | <-- GET /pipeline/runs/run_492a615de200/reconciliation 200 handled by main.get_reconciliation() in 9.1 ms
+########## STEP 7 analytics
+2026-10-31 15:36:04,498 | INFO  | req=ea66dc | src.api.main.log_requests:69 | --> GET /analytics/revenue/summary
+2026-10-31 15:36:04,500 | DEBUG | req=ea66dc | src.api.main.get_db:82 | get_db(): opening connection for this request
+2026-10-31 15:36:04,501 | DEBUG | req=ea66dc | src.pipeline.database.connect:93 | opened SQLite connection to C:\Users\saite\AppData\Local\Temp\demo_api2.db
+2026-10-31 15:36:04,503 | DEBUG | req=ea66dc | src.pipeline.database.initialize:99 | schema ensured (CREATE TABLE IF NOT EXISTS for all tables)
+2026-10-31 15:36:04,504 | INFO  | req=ea66dc | src.pipeline.queries.revenue_summary:87 | SELECT params=[] -> 1 row
+2026-10-31 15:36:04,505 | INFO  | req=ea66dc | src.api.main.log_requests:74 | <-- GET /analytics/revenue/summary 200 handled by main.revenue_summary() in 7.0 ms
+2026-10-31 15:36:04,826 | INFO  | req=d6bead | src.api.main.log_requests:69 | --> GET /analytics/revenue/by-customer
+2026-10-31 15:36:04,828 | DEBUG | req=d6bead | src.api.main.get_db:82 | get_db(): opening connection for this request
+2026-10-31 15:36:04,829 | DEBUG | req=d6bead | src.pipeline.database.connect:93 | opened SQLite connection to C:\Users\saite\AppData\Local\Temp\demo_api2.db
+2026-10-31 15:36:04,831 | DEBUG | req=d6bead | src.pipeline.database.initialize:99 | schema ensured (CREATE TABLE IF NOT EXISTS for all tables)
+2026-10-31 15:36:04,833 | INFO  | req=d6bead | src.pipeline.queries.revenue_by_customer:96 | SELECT params=[50] -> 3 rows
+2026-10-31 15:36:04,834 | INFO  | req=d6bead | src.api.main.log_requests:74 | <-- GET /analytics/revenue/by-customer 200 handled by main.revenue_by_customer() in 8.1 ms
+2026-10-31 15:36:05,138 | INFO  | req=3df8f3 | src.api.main.log_requests:69 | --> GET /analytics/revenue/by-city
+2026-10-31 15:36:05,139 | DEBUG | req=3df8f3 | src.api.main.get_db:82 | get_db(): opening connection for this request
+2026-10-31 15:36:05,141 | DEBUG | req=3df8f3 | src.pipeline.database.connect:93 | opened SQLite connection to C:\Users\saite\AppData\Local\Temp\demo_api2.db
+2026-10-31 15:36:05,143 | DEBUG | req=3df8f3 | src.pipeline.database.initialize:99 | schema ensured (CREATE TABLE IF NOT EXISTS for all tables)
+2026-10-31 15:36:05,145 | INFO  | req=3df8f3 | src.pipeline.queries.revenue_by_city:108 | SELECT params=[] -> 3 rows
+2026-10-31 15:36:05,146 | INFO  | req=3df8f3 | src.api.main.log_requests:74 | <-- GET /analytics/revenue/by-city 200 handled by main.revenue_by_city() in 8.2 ms
+2026-10-31 15:36:05,463 | INFO  | req=7a4811 | src.api.main.log_requests:69 | --> GET /analytics/revenue/by-day?start_date=2026-10-01
+2026-10-31 15:36:05,464 | DEBUG | req=7a4811 | src.api.main.get_db:82 | get_db(): opening connection for this request
+2026-10-31 15:36:05,465 | DEBUG | req=7a4811 | src.pipeline.database.connect:93 | opened SQLite connection to C:\Users\saite\AppData\Local\Temp\demo_api2.db
+2026-10-31 15:36:05,467 | DEBUG | req=7a4811 | src.pipeline.database.initialize:99 | schema ensured (CREATE TABLE IF NOT EXISTS for all tables)
+2026-10-31 15:36:05,468 | INFO  | req=7a4811 | src.pipeline.queries.revenue_by_day:133 | SELECT params=['2026-10-01'] -> 3 rows
+2026-10-31 15:36:05,469 | INFO  | req=7a4811 | src.api.main.log_requests:74 | <-- GET /analytics/revenue/by-day 200 handled by main.revenue_by_day() in 6.6 ms
+2026-10-31 15:36:05,775 | INFO  | req=152f58 | src.api.main.log_requests:69 | --> GET /analytics/rejections/reasons
+2026-10-31 15:36:05,776 | DEBUG | req=152f58 | src.api.main.get_db:82 | get_db(): opening connection for this request
+2026-10-31 15:36:05,777 | DEBUG | req=152f58 | src.pipeline.database.connect:93 | opened SQLite connection to C:\Users\saite\AppData\Local\Temp\demo_api2.db
+2026-10-31 15:36:05,778 | DEBUG | req=152f58 | src.pipeline.database.initialize:99 | schema ensured (CREATE TABLE IF NOT EXISTS for all tables)
+2026-10-31 15:36:05,780 | INFO  | req=152f58 | src.pipeline.queries.rejection_reasons:143 | SELECT params=[] -> 7 rows
+2026-10-31 15:36:05,781 | INFO  | req=152f58 | src.api.main.log_requests:74 | <-- GET /analytics/rejections/reasons 200 handled by main.rejection_reasons() in 6.3 ms
+########## STEP 8 warehouse
+2026-10-31 15:36:06,100 | INFO  | req=11bb0f | src.api.main.log_requests:69 | --> GET /customers
+2026-10-31 15:36:06,101 | DEBUG | req=11bb0f | src.api.main.get_db:82 | get_db(): opening connection for this request
+2026-10-31 15:36:06,102 | DEBUG | req=11bb0f | src.pipeline.database.connect:93 | opened SQLite connection to C:\Users\saite\AppData\Local\Temp\demo_api2.db
+2026-10-31 15:36:06,104 | DEBUG | req=11bb0f | src.pipeline.database.initialize:99 | schema ensured (CREATE TABLE IF NOT EXISTS for all tables)
+2026-10-31 15:36:06,105 | INFO  | req=11bb0f | src.pipeline.queries.list_customers:156 | SELECT params=[100, 0] -> 3 rows
+2026-10-31 15:36:06,106 | INFO  | req=11bb0f | src.api.main.log_requests:74 | <-- GET /customers 200 handled by main.list_customers() in 6.7 ms
+2026-10-31 15:36:06,427 | INFO  | req=51ca8b | src.api.main.log_requests:69 | --> GET /customers/C103
+2026-10-31 15:36:06,428 | DEBUG | req=51ca8b | src.api.main.get_db:82 | get_db(): opening connection for this request
+2026-10-31 15:36:06,429 | DEBUG | req=51ca8b | src.pipeline.database.connect:93 | opened SQLite connection to C:\Users\saite\AppData\Local\Temp\demo_api2.db
+2026-10-31 15:36:06,430 | DEBUG | req=51ca8b | src.pipeline.database.initialize:99 | schema ensured (CREATE TABLE IF NOT EXISTS for all tables)
+2026-10-31 15:36:06,431 | INFO  | req=51ca8b | src.pipeline.queries.get_customer:160 | SELECT params=['C103'] -> 1 row
+2026-10-31 15:36:06,432 | INFO  | req=51ca8b | src.pipeline.queries.get_customer:169 | SELECT params=['C103'] -> 0 rows
+2026-10-31 15:36:06,432 | INFO  | req=51ca8b | src.api.main.log_requests:74 | <-- GET /customers/C103 200 handled by main.get_customer() in 5.8 ms
+2026-10-31 15:36:06,724 | INFO  | req=94d8fd | src.api.main.log_requests:69 | --> GET /orders?customer_id=C103
+2026-10-31 15:36:06,726 | DEBUG | req=94d8fd | src.api.main.get_db:82 | get_db(): opening connection for this request
+2026-10-31 15:36:06,727 | DEBUG | req=94d8fd | src.pipeline.database.connect:93 | opened SQLite connection to C:\Users\saite\AppData\Local\Temp\demo_api2.db
+2026-10-31 15:36:06,728 | DEBUG | req=94d8fd | src.pipeline.database.initialize:99 | schema ensured (CREATE TABLE IF NOT EXISTS for all tables)
+2026-10-31 15:36:06,730 | INFO  | req=94d8fd | src.pipeline.queries.list_orders:194 | SELECT params=['C103', 100, 0] -> 2 rows
+2026-10-31 15:36:06,731 | INFO  | req=94d8fd | src.api.main.log_requests:74 | <-- GET /orders 200 handled by main.list_orders() in 6.5 ms
+2026-10-31 15:36:07,023 | INFO  | req=e7e0f3 | src.api.main.log_requests:69 | --> GET /customers/NOPE
+2026-10-31 15:36:07,024 | DEBUG | req=e7e0f3 | src.api.main.get_db:82 | get_db(): opening connection for this request
+2026-10-31 15:36:07,025 | DEBUG | req=e7e0f3 | src.pipeline.database.connect:93 | opened SQLite connection to C:\Users\saite\AppData\Local\Temp\demo_api2.db
+2026-10-31 15:36:07,026 | DEBUG | req=e7e0f3 | src.pipeline.database.initialize:99 | schema ensured (CREATE TABLE IF NOT EXISTS for all tables)
+2026-10-31 15:36:07,027 | INFO  | req=e7e0f3 | src.pipeline.queries.get_customer:160 | SELECT params=['NOPE'] -> no row
+2026-10-31 15:36:07,028 | INFO  | req=e7e0f3 | src.api.main.log_requests:74 | <-- GET /customers/NOPE 404 handled by main.get_customer() in 4.9 ms
+########## STEP 9 rerun
+2026-10-31 15:36:07,323 | INFO  | req=31cd9e | src.api.main.log_requests:69 | --> POST /pipeline/runs
+2026-10-31 15:36:07,325 | INFO  | req=31cd9e | src.api.main.execute_run:93 | execute_run() -> calling runner.run_pipeline(customers=data/input/customers.csv, orders=data/input/orders.json)
+2026-10-31 15:36:07,325 | INFO  | req=31cd9e | src.pipeline.runner.run_pipeline:60 | run run_4b136f31f3f5 started customers=data/input/customers.csv orders=data/input/orders.json
+2026-10-31 15:36:07,326 | DEBUG | req=31cd9e | src.pipeline.database.connect:93 | opened SQLite connection to C:\Users\saite\AppData\Local\Temp\demo_api2.db
+2026-10-31 15:36:07,328 | DEBUG | req=31cd9e | src.pipeline.database.initialize:99 | schema ensured (CREATE TABLE IF NOT EXISTS for all tables)
+2026-10-31 15:36:07,328 | INFO  | req=31cd9e | src.pipeline.runner.run_pipeline:64 | step 1/7 database ready: C:\Users\saite\AppData\Local\Temp/demo_api2.db
+2026-10-31 15:36:07,328 | INFO  | req=31cd9e | src.pipeline.readers.read_customers:15 | reading customers CSV data\input\customers.csv
+2026-10-31 15:36:07,328 | DEBUG | req=31cd9e | src.pipeline.validation.check_customer_header:22 | customer header OK: required columns ['city', 'customer_id', 'name'] present
+2026-10-31 15:36:07,328 | INFO  | req=31cd9e | src.pipeline.readers.read_customers:24 | customers CSV header=['customer_id', 'name', 'city'] -> 3 data rows
+2026-10-31 15:36:07,329 | INFO  | req=31cd9e | src.pipeline.readers.read_orders:30 | reading orders JSON data\input\orders.json
+2026-10-31 15:36:07,329 | INFO  | req=31cd9e | src.pipeline.readers.read_orders:42 | orders JSON parsed -> 11 order objects
+2026-10-31 15:36:07,329 | INFO  | req=31cd9e | src.pipeline.runner.run_pipeline:74 | step 2/7 files read: 3 customer rows, 11 order rows
+2026-10-31 15:36:07,329 | INFO  | req=31cd9e | src.pipeline.runner.run_pipeline:86 | transaction started
+2026-10-31 15:36:07,329 | INFO  | req=31cd9e | src.pipeline.runner.run_pipeline:99 | step 3/7 customers validated (validate_customer + clean_customer): 3 valid, 0 rejected
+2026-10-31 15:36:07,331 | DEBUG | req=31cd9e | src.pipeline.database.upsert_customer:135 | customer C101 unchanged in dim_customer (customer_key=1)
+2026-10-31 15:36:07,331 | DEBUG | req=31cd9e | src.pipeline.database.upsert_customer:135 | customer C102 unchanged in dim_customer (customer_key=2)
+2026-10-31 15:36:07,331 | DEBUG | req=31cd9e | src.pipeline.database.upsert_customer:135 | customer C103 unchanged in dim_customer (customer_key=3)
+2026-10-31 15:36:07,331 | INFO  | req=31cd9e | src.pipeline.runner.run_pipeline:105 | step 4/7 upserted 3 customers into dim_customer
+2026-10-31 15:36:07,331 | INFO  | req=31cd9e | src.pipeline.runner.run_pipeline:119 | step 5/7 processing 11 orders (newest date_key already loaded=20261028)
+2026-10-31 15:36:07,332 | DEBUG | req=31cd9e | src.pipeline.runner.run_pipeline:148 | order row 1 O500 -> SKIPPED already in fact_order (rerun)
+2026-10-31 15:36:07,332 | DEBUG | req=31cd9e | src.pipeline.runner.run_pipeline:148 | order row 2 O501 -> SKIPPED already in fact_order (rerun)
+2026-10-31 15:36:07,332 | DEBUG | req=31cd9e | src.pipeline.runner.run_pipeline:137 | order row 3 O502 -> validate_order() -> REJECTED ['unknown_customer_id']
+2026-10-31 15:36:07,333 | DEBUG | req=31cd9e | src.pipeline.runner.run_pipeline:148 | order row 4 O503 -> SKIPPED already in fact_order (rerun)
+2026-10-31 15:36:07,333 | DEBUG | req=31cd9e | src.pipeline.runner.run_pipeline:127 | order row 5 O500 -> REJECTED duplicate_order_id_in_batch
+2026-10-31 15:36:07,333 | DEBUG | req=31cd9e | src.pipeline.runner.run_pipeline:137 | order row 6 O504 -> validate_order() -> REJECTED ['missing_amount']
+2026-10-31 15:36:07,333 | DEBUG | req=31cd9e | src.pipeline.runner.run_pipeline:137 | order row 7 O505 -> validate_order() -> REJECTED ['invalid_order_date']
+2026-10-31 15:36:07,333 | DEBUG | req=31cd9e | src.pipeline.runner.run_pipeline:137 | order row 8 O506 -> validate_order() -> REJECTED ['amount_must_be_positive']
+2026-10-31 15:36:07,333 | DEBUG | req=31cd9e | src.pipeline.runner.run_pipeline:137 | order row 9 O507 -> validate_order() -> REJECTED ['amount_more_than_2_decimals']
+2026-10-31 15:36:07,334 | DEBUG | req=31cd9e | src.pipeline.runner.run_pipeline:137 | order row 10 O508 -> validate_order() -> REJECTED ['missing_order_fields:amount']
+2026-10-31 15:36:07,334 | DEBUG | req=31cd9e | src.pipeline.runner.run_pipeline:148 | order row 11 O509 -> SKIPPED already in fact_order (rerun)
+2026-10-31 15:36:07,334 | INFO  | req=31cd9e | src.pipeline.runner.run_pipeline:181 | step 6/7 orders done: accepted=0 rejected=7 skipped=4 late=0; 0 customer rejects written to rejected_records
+2026-10-31 15:36:07,334 | INFO  | req=31cd9e | src.pipeline.runner.run_pipeline:192 | step 7/7 summarize_counts(): input=11 accounted=11 passed=True -> status=COMPLETED_WITH_REJECTS
+2026-10-31 15:36:07,334 | INFO  | req=31cd9e | src.pipeline.runner.run_pipeline:208 | pipeline_runs row written; committing transaction
+2026-10-31 15:36:07,340 | INFO  | req=31cd9e | src.pipeline.runner.run_pipeline:224 | run run_4b136f31f3f5 finished status=COMPLETED_WITH_REJECTS accepted=0 rejected=7 skipped=4 in 0.015s
+2026-10-31 15:36:07,342 | INFO  | req=31cd9e | src.api.main.log_requests:74 | <-- POST /pipeline/runs 201 handled by main.create_run() in 18.6 ms
+########## STEP 10 failure
+2026-10-31 15:36:07,635 | INFO  | req=d55d13 | src.api.main.log_requests:69 | --> POST /pipeline/runs
+2026-10-31 15:36:07,636 | INFO  | req=d55d13 | src.api.main.execute_run:93 | execute_run() -> calling runner.run_pipeline(customers=nope.csv, orders=nope.json)
+2026-10-31 15:36:07,636 | INFO  | req=d55d13 | src.pipeline.runner.run_pipeline:60 | run run_d23d0c0b0926 started customers=nope.csv orders=nope.json
+2026-10-31 15:36:07,638 | DEBUG | req=d55d13 | src.pipeline.database.connect:93 | opened SQLite connection to C:\Users\saite\AppData\Local\Temp\demo_api2.db
+2026-10-31 15:36:07,640 | DEBUG | req=d55d13 | src.pipeline.database.initialize:99 | schema ensured (CREATE TABLE IF NOT EXISTS for all tables)
+2026-10-31 15:36:07,640 | INFO  | req=d55d13 | src.pipeline.runner.run_pipeline:64 | step 1/7 database ready: C:\Users\saite\AppData\Local\Temp/demo_api2.db
+2026-10-31 15:36:07,640 | INFO  | req=d55d13 | src.pipeline.readers.read_customers:15 | reading customers CSV nope.csv
+2026-10-31 15:36:07,640 | ERROR | req=d55d13 | src.pipeline.runner.run_pipeline:215 | run run_d23d0c0b0926 FAILED, transaction rolled back: Customer file not found: nope.csv
+Traceback (most recent call last):
+  File "C:\Users\saite\Downloads\yotta-data-pipeline\src\pipeline\runner.py", line 72, in run_pipeline
+    customers, extra_customer_columns = read_customers(customers_path)
+                                        ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Users\saite\Downloads\yotta-data-pipeline\src\pipeline\readers.py", line 17, in read_customers
+    raise FileNotFoundError(f"Customer file not found: {path}")
+FileNotFoundError: Customer file not found: nope.csv
+2026-10-31 15:36:07,686 | INFO  | req=d55d13 | src.pipeline.runner.record_failed_run:51 | FAILED run run_d23d0c0b0926 recorded in pipeline_runs (separate transaction)
+2026-10-31 15:36:07,686 | WARNING | req=d55d13 | src.api.main.execute_run:98 | run failed, returning 404: Customer file not found: nope.csv
+2026-10-31 15:36:07,687 | INFO  | req=d55d13 | src.api.main.log_requests:74 | <-- POST /pipeline/runs 404 handled by main.create_run() in 52.1 ms
+########## STEP 11 upload
+2026-10-31 15:36:07,970 | INFO  | req=7ba17b | src.api.main.log_requests:69 | --> POST /pipeline/runs/upload
+2026-10-31 15:36:07,975 | INFO  | req=7ba17b | src.api.main.save_upload:109 | save_upload(): stored uploaded customers.csv at data\generated\uploads\cb306ced1f1e\customers.csv
+2026-10-31 15:36:07,976 | INFO  | req=7ba17b | src.api.main.save_upload:109 | save_upload(): stored uploaded orders.json at data\generated\uploads\cb306ced1f1e\orders.json
+2026-10-31 15:36:07,976 | INFO  | req=7ba17b | src.api.main.execute_run:93 | execute_run() -> calling runner.run_pipeline(customers=data\generated\uploads\cb306ced1f1e\customers.csv, orders=data\generated\uploads\cb306ced1f1e\orders.json)
+2026-10-31 15:36:07,976 | INFO  | req=7ba17b | src.pipeline.runner.run_pipeline:60 | run run_064e5e9bfcc1 started customers=data\generated\uploads\cb306ced1f1e\customers.csv orders=data\generated\uploads\cb306ced1f1e\orders.json
+2026-10-31 15:36:07,978 | DEBUG | req=7ba17b | src.pipeline.database.connect:93 | opened SQLite connection to C:\Users\saite\AppData\Local\Temp\demo_api2.db
+2026-10-31 15:36:07,980 | DEBUG | req=7ba17b | src.pipeline.database.initialize:99 | schema ensured (CREATE TABLE IF NOT EXISTS for all tables)
+2026-10-31 15:36:07,980 | INFO  | req=7ba17b | src.pipeline.runner.run_pipeline:64 | step 1/7 database ready: C:\Users\saite\AppData\Local\Temp/demo_api2.db
+2026-10-31 15:36:07,980 | INFO  | req=7ba17b | src.pipeline.readers.read_customers:15 | reading customers CSV data\generated\uploads\cb306ced1f1e\customers.csv
+2026-10-31 15:36:07,982 | DEBUG | req=7ba17b | src.pipeline.validation.check_customer_header:22 | customer header OK: required columns ['city', 'customer_id', 'name'] present
+2026-10-31 15:36:07,982 | INFO  | req=7ba17b | src.pipeline.readers.read_customers:24 | customers CSV header=['customer_id', 'name', 'city'] -> 3 data rows
+2026-10-31 15:36:07,983 | INFO  | req=7ba17b | src.pipeline.readers.read_orders:30 | reading orders JSON data\generated\uploads\cb306ced1f1e\orders.json
+2026-10-31 15:36:07,985 | INFO  | req=7ba17b | src.pipeline.readers.read_orders:42 | orders JSON parsed -> 11 order objects
+2026-10-31 15:36:07,985 | INFO  | req=7ba17b | src.pipeline.runner.run_pipeline:74 | step 2/7 files read: 3 customer rows, 11 order rows
+2026-10-31 15:36:07,986 | INFO  | req=7ba17b | src.pipeline.runner.run_pipeline:86 | transaction started
+2026-10-31 15:36:07,986 | INFO  | req=7ba17b | src.pipeline.runner.run_pipeline:99 | step 3/7 customers validated (validate_customer + clean_customer): 3 valid, 0 rejected
+2026-10-31 15:36:08,027 | DEBUG | req=7ba17b | src.pipeline.database.upsert_customer:135 | customer C101 unchanged in dim_customer (customer_key=1)
+2026-10-31 15:36:08,027 | DEBUG | req=7ba17b | src.pipeline.database.upsert_customer:135 | customer C102 unchanged in dim_customer (customer_key=2)
+2026-10-31 15:36:08,027 | DEBUG | req=7ba17b | src.pipeline.database.upsert_customer:135 | customer C103 unchanged in dim_customer (customer_key=3)
+2026-10-31 15:36:08,027 | INFO  | req=7ba17b | src.pipeline.runner.run_pipeline:105 | step 4/7 upserted 3 customers into dim_customer
+2026-10-31 15:36:08,028 | INFO  | req=7ba17b | src.pipeline.runner.run_pipeline:119 | step 5/7 processing 11 orders (newest date_key already loaded=20261028)
+2026-10-31 15:36:08,028 | DEBUG | req=7ba17b | src.pipeline.runner.run_pipeline:148 | order row 1 O500 -> SKIPPED already in fact_order (rerun)
+2026-10-31 15:36:08,028 | DEBUG | req=7ba17b | src.pipeline.runner.run_pipeline:148 | order row 2 O501 -> SKIPPED already in fact_order (rerun)
+2026-10-31 15:36:08,028 | DEBUG | req=7ba17b | src.pipeline.runner.run_pipeline:137 | order row 3 O502 -> validate_order() -> REJECTED ['unknown_customer_id']
+2026-10-31 15:36:08,028 | DEBUG | req=7ba17b | src.pipeline.runner.run_pipeline:148 | order row 4 O503 -> SKIPPED already in fact_order (rerun)
+2026-10-31 15:36:08,028 | DEBUG | req=7ba17b | src.pipeline.runner.run_pipeline:127 | order row 5 O500 -> REJECTED duplicate_order_id_in_batch
+2026-10-31 15:36:08,028 | DEBUG | req=7ba17b | src.pipeline.runner.run_pipeline:137 | order row 6 O504 -> validate_order() -> REJECTED ['missing_amount']
+2026-10-31 15:36:08,028 | DEBUG | req=7ba17b | src.pipeline.runner.run_pipeline:137 | order row 7 O505 -> validate_order() -> REJECTED ['invalid_order_date']
+2026-10-31 15:36:08,029 | DEBUG | req=7ba17b | src.pipeline.runner.run_pipeline:137 | order row 8 O506 -> validate_order() -> REJECTED ['amount_must_be_positive']
+2026-10-31 15:36:08,029 | DEBUG | req=7ba17b | src.pipeline.runner.run_pipeline:137 | order row 9 O507 -> validate_order() -> REJECTED ['amount_more_than_2_decimals']
+2026-10-31 15:36:08,029 | DEBUG | req=7ba17b | src.pipeline.runner.run_pipeline:137 | order row 10 O508 -> validate_order() -> REJECTED ['missing_order_fields:amount']
+2026-10-31 15:36:08,029 | DEBUG | req=7ba17b | src.pipeline.runner.run_pipeline:148 | order row 11 O509 -> SKIPPED already in fact_order (rerun)
+2026-10-31 15:36:08,029 | INFO  | req=7ba17b | src.pipeline.runner.run_pipeline:181 | step 6/7 orders done: accepted=0 rejected=7 skipped=4 late=0; 0 customer rejects written to rejected_records
+2026-10-31 15:36:08,029 | INFO  | req=7ba17b | src.pipeline.runner.run_pipeline:192 | step 7/7 summarize_counts(): input=11 accounted=11 passed=True -> status=COMPLETED_WITH_REJECTS
+2026-10-31 15:36:08,029 | INFO  | req=7ba17b | src.pipeline.runner.run_pipeline:208 | pipeline_runs row written; committing transaction
+2026-10-31 15:36:08,033 | INFO  | req=7ba17b | src.pipeline.runner.run_pipeline:224 | run run_064e5e9bfcc1 finished status=COMPLETED_WITH_REJECTS accepted=0 rejected=7 skipped=4 in 0.057s
+2026-10-31 15:36:08,035 | INFO  | req=7ba17b | src.api.main.log_requests:74 | <-- POST /pipeline/runs/upload 201 handled by main.upload_run() in 65.1 ms

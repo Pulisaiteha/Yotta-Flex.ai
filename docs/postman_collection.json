@@ -1,0 +1,219 @@
+{
+  "info": {
+    "name": "YottaFlex Data Pipeline API",
+    "description": "Start the API with `uvicorn src.api.main:app --reload`, then run requests top to bottom. 'Run pipeline' saves the run_id into the collection variable used by the monitoring requests.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://127.0.0.1:8000" },
+    { "key": "runId", "value": "" },
+    { "key": "customerId", "value": "C101" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health check",
+          "request": { "method": "GET", "url": "{{baseUrl}}/health" }
+        }
+      ]
+    },
+    {
+      "name": "Pipeline",
+      "item": [
+        {
+          "name": "Run pipeline (server files)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('runId', body.run_id);",
+                  "pm.test('Reconciliation passed', () => pm.expect(body.order_reconciliation_passed).to.eql(true));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/pipeline/runs",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customers_path\": \"data/input/customers.csv\",\n  \"orders_path\": \"data/input/orders.json\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Run pipeline (upload files)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.collectionVariables.set('runId', pm.response.json().run_id);"]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/pipeline/runs/upload",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "customers_file", "type": "file", "src": "data/input/customers.csv" },
+                { "key": "orders_file", "type": "file", "src": "data/input/orders.json" }
+              ]
+            },
+            "description": "Select the two files in the Body tab before sending."
+          }
+        },
+        {
+          "name": "List runs",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/pipeline/runs?limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["pipeline", "runs"],
+              "query": [
+                { "key": "limit", "value": "20" },
+                { "key": "status", "value": "FAILED", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get run",
+          "request": { "method": "GET", "url": "{{baseUrl}}/pipeline/runs/{{runId}}" }
+        },
+        {
+          "name": "Run rejections",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/pipeline/runs/{{runId}}/rejections?entity=order&limit=100&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["pipeline", "runs", "{{runId}}", "rejections"],
+              "query": [
+                { "key": "entity", "value": "order" },
+                { "key": "limit", "value": "100" },
+                { "key": "offset", "value": "0" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Run reconciliation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('All checks passed', () => pm.expect(pm.response.json().passed).to.eql(true));"]
+              }
+            }
+          ],
+          "request": { "method": "GET", "url": "{{baseUrl}}/pipeline/runs/{{runId}}/reconciliation" }
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Revenue summary",
+          "request": { "method": "GET", "url": "{{baseUrl}}/analytics/revenue/summary" }
+        },
+        {
+          "name": "Revenue by customer",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/analytics/revenue/by-customer?limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["analytics", "revenue", "by-customer"],
+              "query": [{ "key": "limit", "value": "10" }]
+            }
+          }
+        },
+        {
+          "name": "Revenue by city",
+          "request": { "method": "GET", "url": "{{baseUrl}}/analytics/revenue/by-city" }
+        },
+        {
+          "name": "Revenue by day",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/analytics/revenue/by-day?start_date=2026-10-01&end_date=2026-10-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["analytics", "revenue", "by-day"],
+              "query": [
+                { "key": "start_date", "value": "2026-10-01" },
+                { "key": "end_date", "value": "2026-10-31" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Rejection reasons",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/analytics/rejections/reasons",
+              "host": ["{{baseUrl}}"],
+              "path": ["analytics", "rejections", "reasons"],
+              "query": [{ "key": "run_id", "value": "{{runId}}", "disabled": true }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Warehouse",
+      "item": [
+        {
+          "name": "List customers",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/customers?limit=100",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers"],
+              "query": [
+                { "key": "limit", "value": "100" },
+                { "key": "city", "value": "Hyderabad", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get customer (with change history)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/customers/{{customerId}}" }
+        },
+        {
+          "name": "List orders",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/orders?customer_id={{customerId}}&limit=100",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders"],
+              "query": [
+                { "key": "customer_id", "value": "{{customerId}}" },
+                { "key": "start_date", "value": "2026-10-01", "disabled": true },
+                { "key": "end_date", "value": "2026-10-31", "disabled": true },
+                { "key": "limit", "value": "100" }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

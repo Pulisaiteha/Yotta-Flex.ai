@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pipeline Demo</title>
+<!--
+  Demo page for the YottaFlex data pipeline. Served by GET / (main.demo_page()).
+  Every button calls a REST endpoint through api() below; each call is listed in the
+  "API calls" panel together with the Python functions it runs on the server.
+-->
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #ffffff; --ink: #1d2330; --muted: #5d6677; --line: #e2e5ea;
+    --accent: #2f5bd3; --accent-ink: #ffffff; --ok: #1f7a4d; --ok-bg: #e6f4ec;
+    --bad: #b42318; --bad-bg: #fdecea; --warn-bg: #fff6e0; --code-bg: #f1f3f6;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { background: var(--ink); color: #fff; padding: 20px 16px; }
+  header h1 { margin: 0 0 4px; font-size: 22px; }
+  header p { margin: 0; color: #c9cfdb; max-width: 900px; }
+  header a { color: #9db7ff; }
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 16px;
+            max-width: 1400px; margin: 0 auto; padding: 16px; }
+  @media (max-width: 1000px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+          padding: 16px 18px; margin-bottom: 16px; }
+  .card h2 { margin: 0 0 4px; font-size: 18px; }
+  .step { display: inline-block; background: var(--accent); color: var(--accent-ink);
+          border-radius: 6px; padding: 1px 8px; font-size: 13px; margin-right: 6px; }
+  .lead { color: var(--muted); margin: 0 0 12px; }
+  .behind { background: var(--code-bg); border-left: 3px solid var(--accent); border-radius: 6px;
+            padding: 8px 12px; font-size: 13px; margin: 10px 0; }
+  .behind b { display: block; margin-bottom: 2px; }
+  code, pre { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 12.5px; }
+  pre { background: var(--code-bg); padding: 10px; border-radius: 6px; overflow: auto; max-height: 260px; margin: 8px 0; }
+  .flow { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; }
+  .flow span { background: var(--code-bg); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; }
+  .flow i { color: var(--muted); font-style: normal; }
+  form { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; margin: 8px 0; }
+  label { display: flex; flex-direction: column; font-size: 12px; color: var(--muted); }
+  input { font: inherit; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; width: 150px; }
+  button { font: inherit; padding: 7px 14px; border-radius: 6px; border: 1px solid var(--accent);
+           background: var(--accent); color: var(--accent-ink); cursor: pointer; }
+  button.secondary { background: transparent; color: var(--accent); }
+  button.chip { padding: 3px 10px; font-size: 13px; background: transparent; color: var(--ink); border-color: var(--line); }
+  button.chip.bad { color: var(--bad); }
+  button.chip.good { color: var(--ok); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; margin: 8px 0; }
+  th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  .table-wrap { overflow-x: auto; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin: 10px 0; }
+  .stat { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+  .stat small { color: var(--muted); display: block; font-size: 12px; }
+  .stat strong { font-size: 20px; }
+  .ok { color: var(--ok); } .bad { color: var(--bad); }
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 99px; font-size: 12px; }
+  .pill.ok { background: var(--ok-bg); } .pill.bad { background: var(--bad-bg); }
+  .msg { padding: 8px 10px; border-radius: 6px; margin: 8px 0; font-size: 14px; }
+  .msg.ok { background: var(--ok-bg); } .msg.bad { background: var(--bad-bg); } .msg.warn { background: var(--warn-bg); }
+  ol.steps { margin: 6px 0; padding-left: 20px; font-size: 13px; }
+  ol.steps li { margin: 2px 0; }
+  aside { position: sticky; top: 16px; align-self: start; max-height: calc(100vh - 32px); overflow: auto; }
+  @media (max-width: 1000px) { aside { position: static; max-height: none; } }
+  .call { border-bottom: 1px solid var(--line); padding: 8px 0; font-size: 12.5px; }
+  .call .line1 { font-family: ui-monospace, Consolas, monospace; }
+  .call .fn { color: var(--muted); margin-top: 2px; }
+  .muted { color: var(--muted); }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>YottaFlex Data Pipeline: step-by-step demo</h1>
+  <p>An online store has two source systems: a <b>CRM</b> that exports <b>customers as CSV</b> and an
+     <b>order system</b> that exports <b>orders as JSON</b>. The pipeline checks both files, loads the good
+     rows into a reporting warehouse, quarantines the bad rows with a reason, and reports revenue.
+     Work through the steps from top to bottom. Also see <a href="/docs" target="_blank">Swagger API docs</a>.</p>
+</header>
+
+<div class="layout">
+<main>
+
+  <!-- ================= OVERVIEW ================= -->
+  <section class="card">
+    <h2>How data moves</h2>
+    <div class="flow">
+      <span>Steps 1–2: you create <b>customers.csv</b> + <b>orders.json</b></span><i>→</i>
+      <span>Step 3: pipeline <b>reads → validates → transforms → loads</b></span><i>→</i>
+      <span>good rows → <b>warehouse</b> (dim_customer, dim_date, fact_order)</span><i>+</i>
+      <span>bad rows → <b>rejected_records</b></span><i>→</i>
+      <span>Steps 4–6: <b>monitoring + reports</b></span>
+    </div>
+  </section>
+
+  <!-- ================= STEP 0 ================= -->
+  <section class="card">
+    <h2><span class="step">Step 0</span>Start clean</h2>
+    <p class="lead">Empty everything, then either load the ready-made sample or type your own data in Steps 1–2.</p>
+    <div class="chips">
+      <button onclick="resetDemo()">Reset everything</button>
+      <button class="secondary" onclick="loadSample()">Load sample data (3 customers, 11 orders)</button>
+    </div>
+    <div class="behind"><b>Behind the scenes</b>
+      <code>POST /demo/reset</code> → <code>main.reset_demo()</code> → <code>source_files.clear()</code> + <code>database.clear_all_tables()</code><br>
+      <code>POST /source/load-sample</code> → <code>main.load_sample()</code> → <code>source_files.load_sample()</code> copies <code>data/input/*</code> to <code>data/workspace/</code>
+    </div>
+    <div id="step0-msg"></div>
+  </section>
+
+  <!-- ================= STEP 1 ================= -->
+  <section class="card">
+    <h2><span class="step">Step 1</span>Customer data → customers.csv</h2>
+    <p class="lead">This plays the role of the CRM system. Each save writes one row to a real CSV file.
+       Saving an existing ID with a new city <b>replaces</b> that row, which simulates a customer moving (see Step 7).</p>
+    <form onsubmit="saveCustomer(event)">
+      <label>customer_id<input id="c-id" placeholder="C104"></label>
+      <label>name<input id="c-name" placeholder="Meena"></label>
+      <label>city<input id="c-city" placeholder="Pune"></label>
+      <button>Save to customers.csv</button>
+    </form>
+    <div class="behind"><b>Behind the scenes</b>
+      <code>POST /source/customers</code> → <code>main.add_source_customer()</code> → <code>source_files.save_customer()</code> writes the CSV.<br>
+      No validation happens here on purpose: the <b>pipeline</b> validates in Step 3.
+    </div>
+    <div id="c-msg"></div>
+    <div class="muted">File: <code id="c-file">-</code></div>
+    <div class="table-wrap" id="c-table"></div>
+    <details><summary class="muted">Show raw file content</summary><pre id="c-raw"></pre></details>
+  </section>
+
+  <!-- ================= STEP 2 ================= -->
+  <section class="card">
+    <h2><span class="step">Step 2</span>Order data → orders.json</h2>
+    <p class="lead">This plays the role of the order system. Use the quick-fill buttons to create good
+       <b>and bad</b> orders, then click Save. Bad orders are written to the file anyway; the pipeline must catch them.</p>
+    <div class="chips" id="quickfill"></div>
+    <form onsubmit="saveOrder(event)">
+      <label>order_id<input id="o-id" placeholder="O600"></label>
+      <label>customer_id<input id="o-cust" list="customer-ids" placeholder="C101"></label>
+      <label>order_date (YYYY-MM-DD)<input id="o-date" placeholder="2026-10-30"></label>
+      <label>amount (INR)<input id="o-amount" placeholder="499.99"></label>
+      <button>Save to orders.json</button>
+    </form>
+    <datalist id="customer-ids"></datalist>
+    <div class="behind"><b>Behind the scenes</b>
+      <code>POST /source/orders</code> → <code>main.add_source_order()</code> → <code>source_files.save_order()</code> appends to the JSON array.
+      Blank fields are stored as <code>null</code>.
+    </div>
+    <div id="o-msg"></div>
+    <div class="muted">File: <code id="o-file">-</code></div>
+    <div class="table-wrap" id="o-table"></div>
+    <details><summary class="muted">Show raw file content</summary><pre id="o-raw"></pre></details>
+  </section>
+
+  <!-- ================= STEP 3 ================= -->
+  <section class="card">
+    <h2><span class="step">Step 3</span>Run the pipeline</h2>
+    <p class="lead">Reads the two files from Steps 1–2 and loads them into the warehouse in one transaction.</p>
+    <button onclick="runPipeline()">Run pipeline</button>
+    <div class="behind"><b>Behind the scenes</b>
+      <code>POST /pipeline/runs</code> with body <code id="run-body">{...}</code><br>
+      → <code>main.create_run()</code> → <code>main.execute_run()</code> → <code>runner.run_pipeline()</code>, which does:
+      <ol class="steps">
+        <li><code>database.connect()</code> + <code>initialize()</code>: open SQLite and create the tables if missing</li>
+        <li><code>readers.read_customers()</code> / <code>read_orders()</code>: read the files; <code>validation.check_customer_header()</code> fails the run if a column is missing</li>
+        <li><code>validation.validate_customer()</code> + <code>transform.clean_customer()</code> for each customer</li>
+        <li><code>database.upsert_customer()</code>: insert or update <code>dim_customer</code>, logging changes to <code>customer_change_log</code></li>
+        <li>For each order: duplicate check → <code>validation.validate_order()</code> → <code>transform.clean_order()</code> (₹ → paise) → skip if already loaded → <code>database.ensure_date()</code> → INSERT <code>fact_order</code>. Bad rows: <code>runner.record_rejection()</code></li>
+        <li>Write the customer rejections</li>
+        <li><code>metrics.summarize_counts()</code>: check input = accepted + rejected + skipped; write <code>pipeline_runs</code>; COMMIT</li>
+      </ol>
+      If anything raises, the transaction rolls back and <code>runner.record_failed_run()</code> stores a FAILED run.
+    </div>
+    <div id="run-msg"></div>
+    <div class="stats" id="run-stats"></div>
+    <details><summary class="muted">Show full JSON response</summary><pre id="run-json"></pre></details>
+  </section>
+
+  <!-- ================= STEP 4 ================= -->
+  <section class="card">
+    <h2><span class="step">Step 4</span>Monitoring: what happened in this run?</h2>
+    <p class="lead">Run <code id="m-run">(none yet)</code>. Every rejected row can be traced to its file and row number.</p>
+
+    <h3>Rejected rows (quarantine)</h3>
+    <div class="behind"><code>GET /pipeline/runs/{run_id}/rejections</code> → <code>main.get_rejections()</code> → <code>queries.list_rejections()</code> → table <code>rejected_records</code></div>
+    <div class="table-wrap" id="m-rejections"><span class="muted">Run the pipeline first.</span></div>
+
+    <h3>Reconciliation: did any row go missing?</h3>
+    <div class="behind"><code>GET /pipeline/runs/{run_id}/reconciliation</code> → <code>main.get_reconciliation()</code> → <code>queries.reconcile_run()</code>: compares the run's counters with what is really stored in the tables</div>
+    <div id="m-recon"><span class="muted">Run the pipeline first.</span></div>
+
+    <h3>Run history</h3>
+    <div class="behind"><code>GET /pipeline/runs</code> → <code>main.list_runs()</code> → <code>queries.list_runs()</code> → table <code>pipeline_runs</code></div>
+    <div class="table-wrap" id="m-runs"></div>
+  </section>
+
+  <!-- ================= STEP 5 ================= -->
+  <section class="card">
+    <h2><span class="step">Step 5</span>Business reports (analytics)</h2>
+    <p class="lead">What a business user sees. Only accepted orders count toward revenue.</p>
+    <div class="behind"><code>GET /analytics/revenue/summary</code> → <code>queries.revenue_summary()</code> · <code>GET /analytics/revenue/by-customer</code> → <code>queries.revenue_by_customer()</code> (fact_order JOIN dim_customer) · <code>GET /analytics/revenue/by-day</code> → <code>queries.revenue_by_day()</code> (fact_order JOIN dim_date) · <code>GET /analytics/rejections/reasons</code> → <code>queries.rejection_reasons()</code></div>
+    <div class="stats" id="a-summary"></div>
+    <div class="table-wrap" id="a-customer"></div>
+    <div class="table-wrap" id="a-day"></div>
+    <div class="table-wrap" id="a-reasons"></div>
+  </section>
+
+  <!-- ================= STEP 6 ================= -->
+  <section class="card">
+    <h2><span class="step">Step 6</span>Look up one customer in the warehouse</h2>
+    <form onsubmit="lookupCustomer(event)">
+      <label>customer_id<input id="w-id" placeholder="C101"></label>
+      <button>Look up</button>
+    </form>
+    <div class="behind"><code>GET /customers/{id}</code> → <code>main.get_customer()</code> → <code>queries.get_customer()</code> → dim_customer + fact_order totals + customer_change_log</div>
+    <div id="w-result"></div>
+  </section>
+
+  <!-- ================= STEP 7 ================= -->
+  <section class="card">
+    <h2><span class="step">Step 7</span>Things to try</h2>
+    <ol>
+      <li><b>Rerun (idempotency):</b> click <i>Run pipeline</i> again without changing anything.
+          Expect <b>accepted 0</b> and <b>skipped</b> = the earlier accepted count. Revenue in Step 5 does <b>not</b> double.</li>
+      <li><b>Add a new order and rerun:</b> only the new order is accepted; the rest are skipped.</li>
+      <li><b>Customer moves city:</b> in Step 1, save <code>C101 / Ravi / Pune</code>, run the pipeline, then look up C101 in Step 6.
+          You'll see the current city plus a history row Hyderabad → Pune.</li>
+      <li><b>Late-arriving order:</b> add a valid order dated earlier than the loaded ones (e.g. 2026-09-01) and run.
+          The run reports <code>late_arriving_orders: 1</code>.</li>
+      <li><b>Failed run:</b> in <a href="/docs#/Pipeline/create_run_pipeline_runs_post" target="_blank">Swagger</a>, POST
+          <code>/pipeline/runs</code> with a file path that doesn't exist. You get a 404 with a run_id, and Step 4's run history shows a FAILED row.</li>
+    </ol>
+  </section>
+</main>
+
+<!-- ================= API CALL LOG ================= -->
+<aside class="card">
+  <h2>API calls made by this page</h2>
+  <p class="lead">Newest first. Each entry shows the HTTP call and the server functions it ran.
+     The server writes the same calls with full detail to <code>logs/pipeline.log</code>.</p>
+  <div id="calls"></div>
+</aside>
+</div>
+
+<script>
+// ---------------------------------------------------------------------------
+// api(): every server call goes through here, so it can be shown in the side panel.
+// `fns` is the description of which Python functions the endpoint runs.
+// ---------------------------------------------------------------------------
+async function api(method, url, body, fns) {
+  const started = performance.now();
+  const opts = { method, headers: {} };
+  if (body !== undefined) { opts.headers["Content-Type"] = "application/json"; opts.body = JSON.stringify(body); }
+  let res, data;
+  try {
+    res = await fetch(url, opts);
+    data = await res.json().catch(() => null);
+  } catch (err) {
+    logCall(method, url, "ERR", 0, fns);
+    throw err;
+  }
+  logCall(method, url, res.status, performance.now() - started, fns);
+  return { ok: res.ok, status: res.status, data };
+}
+
+function logCall(method, url, status, ms, fns) {
+  const box = document.createElement("div");
+  box.className = "call";
+  const line1 = el("div", "line1");
+  line1.append(el("b", status >= 200 && status < 300 ? "ok" : "bad", String(status)), " ",
+               `${method} ${url}`, el("span", "muted", `  ${ms.toFixed(0)} ms`));
+  box.append(line1, el("div", "fn", fns));
+  document.getElementById("calls").prepend(box);
+}
+
+// Small DOM helpers (textContent only, so typed values can't inject HTML).
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+function show(id, node) { const t = document.getElementById(id); t.replaceChildren(...(node ? [node] : [])); }
+function msg(id, kind, text) { show(id, el("div", `msg ${kind}`, text)); }
+function table(rows, cols, title) {
+  const wrap = el("div");
+  if (title) wrap.append(el("h3", null, title));
+  if (!rows || rows.length === 0) { wrap.append(el("div", "muted", "(no rows)")); return wrap; }
+  cols = cols || Object.keys(rows[0]);
+  const t = el("table"), head = el("tr");
+  cols.forEach(c => head.append(el("th", null, c)));
+  t.append(head);
+  rows.forEach(r => {
+    const tr = el("tr");
+    cols.forEach(c => tr.append(el("td", null, r[c] === null || r[c] === undefined ? "null" : String(r[c]))));
+    t.append(tr);
+  });
+  wrap.append(t);
+  return wrap;
+}
+function stat(label, value, cls) {
+  const s = el("div", "stat");
+  s.append(el("small", null, label), el("strong", cls, String(value)));
+  return s;
+}
+
+let sourceFiles = { customers: null, orders: null };
+let customerRows = [], orderRows = [];
+
+// ---------------- Step 0 ----------------
+async function resetDemo() {
+  const r = await api("POST", "/demo/reset", undefined,
+    "main.reset_demo() → source_files.clear() + database.clear_all_tables()");
+  msg("step0-msg", r.ok ? "ok" : "bad", r.ok ? "Input files and warehouse emptied." : JSON.stringify(r.data));
+  await refreshAll();
+}
+async function loadSample() {
+  const r = await api("POST", "/source/load-sample", undefined,
+    "main.load_sample() → source_files.load_sample() (copies data/input/* → data/workspace/)");
+  msg("step0-msg", r.ok ? "ok" : "bad",
+      r.ok ? "Sample loaded: 3 customers and 11 orders (4 good, 7 deliberately bad). Now run Step 3."
+           : JSON.stringify(r.data));
+  await loadSourceFiles();
+}
+
+// ---------------- Step 1 ----------------
+async function loadSourceFiles() {
+  const c = await api("GET", "/source/customers", undefined,
+    "main.get_source_customers() → source_files.read_customers_file()");
+  sourceFiles.customers = c.data.file; customerRows = c.data.rows;
+  document.getElementById("c-file").textContent = c.data.file;
+  show("c-table", table(customerRows, ["customer_id", "name", "city"]));
+  document.getElementById("c-raw").textContent =
+    ["customer_id,name,city", ...customerRows.map(r => [r.customer_id, r.name, r.city].join(","))].join("\n");
+  const dl = document.getElementById("customer-ids");
+  dl.replaceChildren(...customerRows.map(r => { const o = el("option"); o.value = r.customer_id; return o; }));
+
+  const o = await api("GET", "/source/orders", undefined,
+    "main.get_source_orders() → source_files.read_orders_file()");
+  sourceFiles.orders = o.data.file; orderRows = o.data.rows;
+  document.getElementById("o-file").textContent = o.data.file;
+  show("o-table", table(orderRows.map((r, i) => ({ row: i + 1, ...r })),
+                        ["row", "order_id", "customer_id", "order_date", "amount"]));
+  document.getElementById("o-raw").textContent = JSON.stringify(orderRows, null, 2);
+  document.getElementById("run-body").textContent =
+    JSON.stringify({ customers_path: sourceFiles.customers, orders_path: sourceFiles.orders });
+  suggestOrderId();
+}
+
+async function saveCustomer(e) {
+  e.preventDefault();
+  const body = { customer_id: val("c-id"), name: val("c-name"), city: val("c-city") };
+  const r = await api("POST", "/source/customers", body,
+    "main.add_source_customer() → source_files.save_customer() → writes customers.csv");
+  msg("c-msg", r.ok ? "ok" : "bad",
+      r.ok ? `Customer ${r.data.action} in ${r.data.file} (${r.data.total_rows} rows).` : JSON.stringify(r.data));
+  ["c-id", "c-name", "c-city"].forEach(id => document.getElementById(id).value = "");
+  await loadSourceFiles();
+}
+
+// ---------------- Step 2 ----------------
+function isoDate(offsetDays) {
+  const d = new Date(); d.setDate(d.getDate() + offsetDays);
+  return d.toISOString().slice(0, 10);
+}
+function suggestOrderId() { document.getElementById("o-id").value = "O" + (600 + orderRows.length); }
+function fill(customer, date, amount, orderId) {
+  if (orderId !== undefined) document.getElementById("o-id").value = orderId; else suggestOrderId();
+  document.getElementById("o-cust").value = customer;
+  document.getElementById("o-date").value = date;
+  document.getElementById("o-amount").value = amount;
+}
+const firstCustomer = () => (customerRows[0] && customerRows[0].customer_id) || "C101";
+const QUICK_FILLS = [
+  ["✓ valid order", "good", () => fill(firstCustomer(), isoDate(-1), "499.99")],
+  ["✓ smallest amount ₹0.01", "good", () => fill(firstCustomer(), isoDate(-1), "0.01")],
+  ["✗ unknown customer", "bad", () => fill("C999", isoDate(-1), "250")],
+  ["✗ negative amount", "bad", () => fill(firstCustomer(), isoDate(-1), "-50")],
+  ["✗ 3 decimals (0.001)", "bad", () => fill(firstCustomer(), isoDate(-1), "0.001")],
+  ["✗ blank amount", "bad", () => fill(firstCustomer(), isoDate(-1), "")],
+  ["✗ impossible date", "bad", () => fill(firstCustomer(), "2026-02-30", "300")],
+  ["✗ future date", "bad", () => fill(firstCustomer(), isoDate(30), "300")],
+  ["✗ duplicate of last order", "bad", () => {
+      const last = orderRows[orderRows.length - 1];
+      if (last) fill(last.customer_id || "", last.order_date || "", last.amount || "", last.order_id || "");
+  }],
+];
+QUICK_FILLS.forEach(([label, kind, fn]) => {
+  const b = el("button", `chip ${kind}`, label);
+  b.type = "button"; b.onclick = fn;
+  document.getElementById("quickfill").append(b);
+});
+
+async function saveOrder(e) {
+  e.preventDefault();
+  const body = { order_id: val("o-id"), customer_id: val("o-cust"), order_date: val("o-date"), amount: val("o-amount") };
+  const r = await api("POST", "/source/orders", body,
+    "main.add_source_order() → source_files.save_order() → appends to orders.json");
+  msg("o-msg", r.ok ? "ok" : "bad",
+      r.ok ? `Order appended to ${r.data.file} (${r.data.total_rows} orders in file).` : JSON.stringify(r.data));
+  await loadSourceFiles();
+}
+
+// ---------------- Step 3 ----------------
+async function runPipeline() {
+  const body = { customers_path: sourceFiles.customers, orders_path: sourceFiles.orders };
+  const r = await api("POST", "/pipeline/runs", body,
+    "main.create_run() → execute_run() → runner.run_pipeline() → readers → validation → transform → database (1 transaction)");
+  document.getElementById("run-json").textContent = JSON.stringify(r.data, null, 2);
+  if (!r.ok) {
+    const d = r.data && r.data.detail;
+    msg("run-msg", "bad", `Run FAILED (HTTP ${r.status}): ${d && d.error ? d.error : JSON.stringify(d)}`);
+    show("run-stats", null);
+    await loadMonitoring(d && d.run_id);
+    return;
+  }
+  const s = r.data;
+  msg("run-msg", s.status === "SUCCESS" ? "ok" : "warn",
+      `Run ${s.run_id} finished: ${s.status}. ${s.order_rows_read} orders read = ` +
+      `${s.accepted_orders} accepted + ${s.rejected_orders} rejected + ${s.skipped_orders_already_loaded} skipped.` +
+      (s.skipped_orders_already_loaded
+        ? ` ${s.skipped_orders_already_loaded} order(s) were skipped because an earlier run already loaded them` +
+          ` (idempotency: revenue is not double-counted). For a fresh first load, use Step 0 → Reset everything.`
+        : ""));
+  const stats = document.getElementById("run-stats");
+  stats.replaceChildren(
+    stat("Orders read", s.order_rows_read),
+    stat("Accepted (loaded)", s.accepted_orders, "ok"),
+    stat("Rejected (quarantined)", s.rejected_orders, s.rejected_orders ? "bad" : ""),
+    stat("Skipped (already loaded)", s.skipped_orders_already_loaded),
+    stat("Late-arriving", s.late_arriving_orders),
+    stat("Customer rows rejected", s.rejected_customers, s.rejected_customers ? "bad" : ""),
+    stat("Reconciliation", s.order_reconciliation_passed ? "PASSED" : "FAILED",
+         s.order_reconciliation_passed ? "ok" : "bad"),
+    stat("Loaded this run (₹)", s.accepted_amount_inr),
+    stat("Warehouse total (₹)", s.warehouse_total_revenue_inr),
+  );
+  await loadMonitoring(s.run_id);
+  await loadAnalytics();
+}
+
+// ---------------- Step 4 ----------------
+async function loadMonitoring(runId) {
+  const runs = await api("GET", "/pipeline/runs?limit=10", undefined,
+    "main.list_runs() → queries.list_runs()");
+  show("m-runs", table(runs.data, ["run_id", "status", "order_rows_read", "accepted_orders",
+                                    "rejected_orders", "skipped_orders", "message"]));
+  if (!runId && runs.data.length) runId = runs.data[0].run_id;
+  if (!runId) {
+    document.getElementById("m-run").textContent = "(none yet)";
+    show("m-rejections", el("span", "muted", "Run the pipeline first."));
+    show("m-recon", el("span", "muted", "Run the pipeline first."));
+    return;
+  }
+  document.getElementById("m-run").textContent = runId;
+
+  const rej = await api("GET", `/pipeline/runs/${runId}/rejections`, undefined,
+    "main.get_rejections() → queries.get_run() + queries.list_rejections()");
+  show("m-rejections", table(rej.data, ["entity", "source_name", "source_row_number", "record_id", "reason"]));
+
+  const rec = await api("GET", `/pipeline/runs/${runId}/reconciliation`, undefined,
+    "main.get_reconciliation() → queries.reconcile_run()");
+  const box = el("div");
+  if (rec.ok) {
+    const ul = el("ul");
+    Object.entries(rec.data.checks).forEach(([name, passed]) => {
+      const li = el("li");
+      li.append(el("span", `pill ${passed ? "ok" : "bad"}`, passed ? "PASS" : "FAIL"), " ", name.replaceAll("_", " "));
+      ul.append(li);
+    });
+    box.append(ul, el("div", "muted",
+      `Run says ${rec.data.accepted_orders} accepted / ₹${rec.data.accepted_amount_inr}; ` +
+      `fact_order really holds ${rec.data.fact_rows_loaded_by_run} rows / ₹${rec.data.fact_amount_loaded_inr} for this run.`));
+  }
+  show("m-recon", box);
+}
+
+// ---------------- Step 5 ----------------
+async function loadAnalytics() {
+  const s = await api("GET", "/analytics/revenue/summary", undefined, "main.revenue_summary() → queries.revenue_summary()");
+  document.getElementById("a-summary").replaceChildren(
+    stat("Total revenue (₹)", s.data.total_revenue_inr, "ok"),
+    stat("Orders", s.data.order_count),
+    stat("Paying customers", s.data.paying_customers),
+    stat("Avg order value (₹)", s.data.avg_order_value_inr));
+  const c = await api("GET", "/analytics/revenue/by-customer", undefined, "main.revenue_by_customer() → queries.revenue_by_customer()");
+  show("a-customer", table(c.data, null, "Revenue by customer"));
+  const d = await api("GET", "/analytics/revenue/by-day", undefined, "main.revenue_by_day() → queries.revenue_by_day()");
+  show("a-day", table(d.data, null, "Revenue by day"));
+  const q = await api("GET", "/analytics/rejections/reasons", undefined, "main.rejection_reasons() → queries.rejection_reasons()");
+  show("a-reasons", table(q.data, null, "Data-quality issues (all runs)"));
+}
+
+// ---------------- Step 6 ----------------
+async function lookupCustomer(e) {
+  e.preventDefault();
+  const id = val("w-id");
+  const r = await api("GET", `/customers/${encodeURIComponent(id)}`, undefined,
+    "main.get_customer() → queries.get_customer()");
+  if (!r.ok) { msg("w-result", "bad", `HTTP ${r.status}: ${JSON.stringify(r.data.detail)}`); return; }
+  const box = el("div");
+  box.append(table([r.data], ["customer_id", "name", "city", "order_count", "revenue_inr"]),
+             table(r.data.change_history, ["old_name", "old_city", "new_name", "new_city", "run_id", "changed_at"],
+                   "Change history (customer_change_log)"));
+  show("w-result", box);
+}
+
+function val(id) { return document.getElementById(id).value.trim(); }
+
+async function refreshAll() {
+  await loadSourceFiles();
+  await loadMonitoring();
+  await loadAnalytics();
+}
+refreshAll();
+</script>
+</body>
+</html>
